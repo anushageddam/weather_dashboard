@@ -106,7 +106,7 @@ st.line_chart(df.set_index('time')['temperature'])
 st.markdown("## 🌧️ Rain Prediction (Next 24 Hours)")
 st.bar_chart(df.set_index('time')['rain'].head(24))
 
-# ---------------- FORECAST ----------------
+# ---------------- 7 DAY FORECAST ----------------
 st.markdown("## 📅 7-Day Forecast")
 
 daily = data['daily']
@@ -128,10 +128,14 @@ for i in range(7):
         </div>
         """, unsafe_allow_html=True)
 
-# ---------------- REAL MAP (FIXED) ----------------
+# ---------------- FINAL MAP ----------------
 st.markdown(f"## 📍 Map View: {city}")
 
-m = folium.Map(location=[lat, lon], zoom_start=12)
+m = folium.Map(
+    location=[lat, lon],
+    zoom_start=12,
+    tiles="CartoDB positron"   # clean, mostly English
+)
 
 folium.Marker(
     [lat, lon],
@@ -139,4 +143,4 @@ folium.Marker(
     popup=f"{city} - {current['temperature']}°C"
 ).add_to(m)
 
-st_folium(m, width=1000, height=500)
+st_folium(m, use_container_width=True, height=500)
