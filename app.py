@@ -2,6 +2,8 @@ import streamlit as st
 import requests
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
+import folium
+from streamlit_folium import st_folium
 
 # ---------------- PAGE SETUP ----------------
 st.set_page_config(page_title="Weather App", layout="wide")
@@ -11,12 +13,6 @@ st.markdown("""
 [data-testid="stAppViewContainer"] {
     background-color: #0e1117;
     color: white;
-}
-[data-testid="stHeader"] {
-    background: transparent;
-}
-[data-testid="stToolbar"] {
-    display: none;
 }
 .card {
     background-color: #1c1f26;
@@ -79,7 +75,7 @@ current_humidity = df['humidity'].iloc[-1]
 prediction = model.predict([[current_hour, current_humidity]])
 accuracy = model.score(X, y)
 
-# ---------------- MAIN CARDS ----------------
+# ---------------- MAIN UI ----------------
 col1, col2 = st.columns([3,1])
 
 with col1:
@@ -110,11 +106,10 @@ st.line_chart(df.set_index('time')['temperature'])
 st.markdown("## 🌧️ Rain Prediction (Next 24 Hours)")
 st.bar_chart(df.set_index('time')['rain'].head(24))
 
-# ---------------- 7 DAY FORECAST ----------------
+# ---------------- FORECAST ----------------
 st.markdown("## 📅 7-Day Forecast")
 
 daily = data['daily']
-
 forecast_df = pd.DataFrame({
     'date': daily['time'],
     'max': daily['temperature_2m_max'],
@@ -133,12 +128,15 @@ for i in range(7):
         </div>
         """, unsafe_allow_html=True)
 
-# ---------------- MAP (STABLE VERSION) ----------------
-st.markdown(f"## 📍 Location: {city}")
+# ---------------- REAL MAP (FIXED) ----------------
+st.markdown(f"## 📍 Map View: {city}")
 
-map_df = pd.DataFrame({
-    'lat': [lat],
-    'lon': [lon]
-})
+m = folium.Map(location=[lat, lon], zoom_start=12)
 
-st.map(map_df, zoom=12, use_container_width=True)
+folium.Marker(
+    [lat, lon],
+    tooltip=city,
+    popup=f"{city} - {current['temperature']}°C"
+).add_to(m)
+
+st_folium(m, width=1000, height=500)
