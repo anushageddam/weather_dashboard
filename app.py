@@ -155,14 +155,12 @@ st.pydeck_chart(pdk.Deck(
         "IconLayer",
         data=pd.DataFrame({'lat':[lat],'lon':[lon]}),
         get_position='[lon, lat]',
-        get_icon="""
-        {
-            "url": "https://img.icons8.com/emoji/48/000000/red-circle-emoji.png",
-            "width": 128,
-            "height": 128,
-            "anchorY": 128
-        }
-        """,
+        get_icon={
+    "url": "https://cdn-icons-png.flaticon.com/512/684/684908.png",
+    "width": 128,
+    "height": 128,
+    "anchorY": 128
+},
         get_size=4,
         size_scale=10,
     ),
