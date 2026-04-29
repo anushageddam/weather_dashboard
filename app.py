@@ -142,14 +142,16 @@ import pydeck as pdk
 
 st.subheader(f"📍 Map View: {city}")
 
+st.subheader(f"📍 Map View: {city}")
+
 st.pydeck_chart(pdk.Deck(
-    map_style='mapbox://styles/mapbox/light-v9',
+    map_style="mapbox://styles/mapbox/light-v9",
     initial_view_state=pdk.ViewState(
         latitude=lat,
         longitude=lon,
-        zoom=11,
-        pitch=45,
-    ),
+        zoom=10
+    )
+))
     layers=[
     pdk.Layer(
         "IconLayer",
