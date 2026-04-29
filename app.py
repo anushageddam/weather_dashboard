@@ -2,29 +2,55 @@ import streamlit as st
 import requests
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
+import folium
+from streamlit_folium import st_folium
 
-# ---------------- PAGE CONFIG ----------------
+# ---------------- PAGE ----------------
 st.set_page_config(page_title="Weather Pro", layout="wide")
 
-# ---------------- SIMPLE CLEAN CSS ----------------
+# ---------------- CSS FIXED ----------------
 st.markdown("""
 <style>
-.main {
-    background-color: #0e1117;
+[data-testid="stAppViewContainer"] {
+    background: linear-gradient(to right, #1e3c72, #2a5298);
     color: white;
 }
-.card {
-    background-color: #1c1f26;
-    padding: 15px;
+
+/* MAIN CARDS */
+.metric-card {
+    background: rgba(255,255,255,0.25);
+    color: white;
+    padding: 20px;
     border-radius: 15px;
-    margin-bottom: 10px;
+    backdrop-filter: blur(10px);
+}
+
+/* TEXT FIX */
+.metric-card h1, .metric-card h2, .metric-card p {
+    color: white !important;
+}
+
+/* HOURLY SCROLL */
+.hour-box {
+    display: flex;
+    overflow-x: auto;
+    gap: 10px;
+}
+
+.hour-card {
+    min-width: 90px;
+    background: rgba(255,255,255,0.3);
+    color: white;
+    padding: 10px;
+    border-radius: 10px;
+    text-align: center;
 }
 </style>
 """, unsafe_allow_html=True)
 
 # ---------------- TITLE ----------------
 st.title("🌦️ Weather Pro")
-st.caption("AI-powered weather dashboard")
+st.caption("Real-time + AI Prediction")
 
 # ---------------- SEARCH ----------------
 city = st.text_input("🔍 Search City", "Hyderabad")
@@ -65,47 +91,49 @@ model.fit(X, y)
 current = data['current_weather']
 pred = model.predict([[pd.to_datetime(current['time']).hour, df['humidity'].iloc[-1]]])
 
-# ---------------- MAIN CARD ----------------
+# ---------------- MAIN ----------------
 col1, col2 = st.columns([2,1])
 
 with col1:
     st.markdown(f"""
-    <div class="card">
+    <div class="metric-card">
         <h2>📍 {city}</h2>
-        <h1>{current['temperature']}°C</h1>
-        <p>🤖 Predicted: {round(pred[0],2)}°C</p>
+        <h1 style="font-size:60px">{current['temperature']}°C</h1>
+        <p>🤖 Prediction: {round(pred[0],2)}°C</p>
     </div>
     """, unsafe_allow_html=True)
 
 with col2:
     st.markdown(f"""
-    <div class="card">
-        💧 Humidity: {df['humidity'].iloc[-1]}% <br>
+    <div class="metric-card">
+        💧 Humidity: {df['humidity'].iloc[-1]}%<br>
         💨 Wind: {current['windspeed']} km/h
     </div>
     """, unsafe_allow_html=True)
 
-# ---------------- HOURLY (FIXED — NO HTML BUG) ----------------
-st.subheader("⏰ Hourly Forecast")
+# ---------------- HOURLY ----------------
+st.markdown("### ⏰ Hourly Forecast")
 
-hour_cols = st.columns(6)
+hour_html = '<div class="hour-box">'
+for i in range(12):
+    hour = df.iloc[i]
+    hour_html += f"""
+    <div class="hour-card">
+        {hour['time'].strftime('%H:%M')}<br>
+        🌡️ {hour['temp']}°<br>
+        🌧️ {hour['rain']}
+    </div>
+    """
+hour_html += "</div>"
 
-for i in range(6):
-    with hour_cols[i]:
-        st.markdown(f"""
-        <div class="card" style="text-align:center">
-            <b>{df['time'][i].strftime('%H:%M')}</b><br>
-            🌡️ {df['temp'][i]}°<br>
-            🌧️ {df['rain'][i]}
-        </div>
-        """, unsafe_allow_html=True)
+st.markdown(hour_html, unsafe_allow_html=True)
 
 # ---------------- GRAPH ----------------
-st.subheader("📈 Temperature Trend")
+st.markdown("### 📈 Temperature Trend")
 st.line_chart(df.set_index("time")['temp'])
 
 # ---------------- 7 DAY ----------------
-st.subheader("📅 7-Day Forecast")
+st.markdown("### 📅 7-Day Forecast")
 
 daily = data['daily']
 cols = st.columns(7)
@@ -113,14 +141,21 @@ cols = st.columns(7)
 for i in range(7):
     with cols[i]:
         st.markdown(f"""
-        <div class="card" style="text-align:center">
+        <div class="metric-card" style="text-align:center">
             {pd.to_datetime(daily['time'][i]).strftime('%a')}<br>
             <b>{daily['temperature_2m_max'][i]}°</b><br>
             <small>{daily['temperature_2m_min'][i]}°</small>
         </div>
         """, unsafe_allow_html=True)
 
-# ---------------- MAP (STABLE) ----------------
-st.subheader("📍 Map")
+# ---------------- MAP ----------------
+st.markdown("### 📍 Map")
 
-st.map(pd.DataFrame({'lat':[lat],'lon':[lon]}), zoom=12)
+m = folium.Map(location=[lat, lon], zoom_start=12, tiles="CartoDB positron")
+
+folium.Marker(
+    [lat, lon],
+    popup=f"{city} - {current['temperature']}°C"
+).add_to(m)
+
+st_folium(m, use_container_width=True, height=500)
