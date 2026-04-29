@@ -143,7 +143,7 @@ import pydeck as pdk
 st.subheader(f"📍 Map View: {city}")
 
 st.pydeck_chart(pdk.Deck(
-    map_style='mapbox://styles/mapbox/streets-v11',
+    map_style='mapbox://styles/mapbox/light-v9',
     initial_view_state=pdk.ViewState(
         latitude=lat,
         longitude=lon,
@@ -151,12 +151,20 @@ st.pydeck_chart(pdk.Deck(
         pitch=45,
     ),
     layers=[
-        pdk.Layer(
-            "ScatterplotLayer",
-            data=pd.DataFrame({'lat':[lat],'lon':[lon]}),
-            get_position='[lon, lat]',
-            get_color='[0, 255, 255, 200]',
-            get_radius=30000,
-        ),
-    ],
+    pdk.Layer(
+        "IconLayer",
+        data=pd.DataFrame({'lat':[lat],'lon':[lon]}),
+        get_position='[lon, lat]',
+        get_icon="""
+        {
+            "url": "https://img.icons8.com/emoji/48/000000/red-circle-emoji.png",
+            "width": 128,
+            "height": 128,
+            "anchorY": 128
+        }
+        """,
+        get_size=4,
+        size_scale=10,
+    ),
+],
 ))
