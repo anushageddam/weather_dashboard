@@ -2,53 +2,20 @@ import streamlit as st
 import requests
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
-import folium
-from streamlit_folium import st_folium
 
 # ---------------- PAGE ----------------
 st.set_page_config(page_title="Weather Pro", layout="wide")
 
-# ---------------- CSS FIXED ----------------
+# ---------------- UI ----------------
 st.markdown("""
 <style>
 [data-testid="stAppViewContainer"] {
     background: linear-gradient(to right, #1e3c72, #2a5298);
     color: white;
 }
-
-/* MAIN CARDS */
-.metric-card {
-    background: rgba(255,255,255,0.25);
-    color: white;
-    padding: 20px;
-    border-radius: 15px;
-    backdrop-filter: blur(10px);
-}
-
-/* TEXT FIX */
-.metric-card h1, .metric-card h2, .metric-card p {
-    color: white !important;
-}
-
-/* HOURLY SCROLL */
-.hour-box {
-    display: flex;
-    overflow-x: auto;
-    gap: 10px;
-}
-
-.hour-card {
-    min-width: 90px;
-    background: rgba(255,255,255,0.3);
-    color: white;
-    padding: 10px;
-    border-radius: 10px;
-    text-align: center;
-}
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------- TITLE ----------------
 st.title("🌦️ Weather Pro")
 st.caption("Real-time + AI Prediction")
 
@@ -95,67 +62,45 @@ pred = model.predict([[pd.to_datetime(current['time']).hour, df['humidity'].iloc
 col1, col2 = st.columns([2,1])
 
 with col1:
-    st.markdown(f"""
-    <div class="metric-card">
-        <h2>📍 {city}</h2>
-        <h1 style="font-size:60px">{current['temperature']}°C</h1>
-        <p>🤖 Prediction: {round(pred[0],2)}°C</p>
-    </div>
-    """, unsafe_allow_html=True)
+    st.metric("📍 City", city)
+    st.metric("🌡️ Temperature", f"{current['temperature']}°C")
+    st.metric("🤖 Prediction", f"{round(pred[0],2)}°C")
 
 with col2:
-    st.markdown(f"""
-    <div class="metric-card">
-        💧 Humidity: {df['humidity'].iloc[-1]}%<br>
-        💨 Wind: {current['windspeed']} km/h
-    </div>
-    """, unsafe_allow_html=True)
+    st.metric("💧 Humidity", f"{df['humidity'].iloc[-1]}%")
+    st.metric("💨 Wind", f"{current['windspeed']} km/h")
 
-# ---------------- HOURLY ----------------
-st.markdown("### ⏰ Hourly Forecast")
+# ---------------- HOURLY (FIXED) ----------------
+st.subheader("⏰ Hourly Forecast")
 
-hour_html = '<div class="hour-box">'
-for i in range(12):
-    hour = df.iloc[i]
-    hour_html += f"""
-    <div class="hour-card">
-        {hour['time'].strftime('%H:%M')}<br>
-        🌡️ {hour['temp']}°<br>
-        🌧️ {hour['rain']}
-    </div>
-    """
-hour_html += "</div>"
+hour_cols = st.columns(6)
 
-st.markdown(hour_html, unsafe_allow_html=True)
+for i in range(6):
+    with hour_cols[i]:
+        st.write(df['time'][i].strftime('%H:%M'))
+        st.write(f"🌡️ {df['temp'][i]}°")
+        st.write(f"🌧️ {df['rain'][i]}")
 
 # ---------------- GRAPH ----------------
-st.markdown("### 📈 Temperature Trend")
+st.subheader("📈 Temperature Trend")
 st.line_chart(df.set_index("time")['temp'])
 
 # ---------------- 7 DAY ----------------
-st.markdown("### 📅 7-Day Forecast")
+st.subheader("📅 7-Day Forecast")
 
 daily = data['daily']
 cols = st.columns(7)
 
 for i in range(7):
     with cols[i]:
-        st.markdown(f"""
-        <div class="metric-card" style="text-align:center">
-            {pd.to_datetime(daily['time'][i]).strftime('%a')}<br>
-            <b>{daily['temperature_2m_max'][i]}°</b><br>
-            <small>{daily['temperature_2m_min'][i]}°</small>
-        </div>
-        """, unsafe_allow_html=True)
+        st.write(pd.to_datetime(daily['time'][i]).strftime('%a'))
+        st.write(f"{daily['temperature_2m_max'][i]}°")
+        st.write(f"{daily['temperature_2m_min'][i]}°")
 
-# ---------------- MAP ----------------
-st.markdown("### 📍 Map")
+# ---------------- MAP (WORKING) ----------------
+st.subheader("📍 Map")
 
-m = folium.Map(location=[lat, lon], zoom_start=12, tiles="CartoDB positron")
-
-folium.Marker(
-    [lat, lon],
-    popup=f"{city} - {current['temperature']}°C"
-).add_to(m)
-
-st_folium(m, use_container_width=True, height=500)
+st.map(pd.DataFrame({
+    'lat': [lat],
+    'lon': [lon]
+}), zoom=10)
