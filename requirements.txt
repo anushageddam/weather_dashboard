@@ -3,3 +3,5 @@ pandas
 scikit-learn
 requests
 pydeck
+folium
+streamlit-folium
