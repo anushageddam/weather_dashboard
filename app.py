@@ -2,51 +2,22 @@ import streamlit as st
 import requests
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
-import folium
-from streamlit_folium import st_folium
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="Weather Pro", layout="wide")
 
-# ---------------- PREMIUM CSS ----------------
+# ---------------- SIMPLE CLEAN CSS ----------------
 st.markdown("""
 <style>
-body {
-    background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
+.main {
+    background-color: #0e1117;
     color: white;
 }
-
 .card {
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(10px);
-    padding: 20px;
-    border-radius: 20px;
-    box-shadow: 0 4px 30px rgba(0,0,0,0.3);
-    margin-bottom: 15px;
-}
-
-.big-temp {
-    font-size: 60px;
-    font-weight: bold;
-}
-
-.small-text {
-    opacity: 0.8;
-}
-
-.hourly-box {
-    display: flex;
-    overflow-x: auto;
-    gap: 15px;
-    padding: 10px;
-}
-
-.hour-card {
-    min-width: 90px;
-    background: rgba(255,255,255,0.1);
-    padding: 10px;
+    background-color: #1c1f26;
+    padding: 15px;
     border-radius: 15px;
-    text-align: center;
+    margin-bottom: 10px;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -95,60 +66,61 @@ current = data['current_weather']
 pred = model.predict([[pd.to_datetime(current['time']).hour, df['humidity'].iloc[-1]]])
 
 # ---------------- MAIN CARD ----------------
-st.markdown(f"""
-<div class="card">
-    <h2>📍 {city}</h2>
-    <div class="big-temp">☀️ {current['temperature']}°C</div>
-    <p class="small-text">Predicted: {round(pred[0],2)}°C</p>
-</div>
-""", unsafe_allow_html=True)
+col1, col2 = st.columns([2,1])
 
-# ---------------- HOURLY SCROLL ----------------
-st.markdown("### ⏰ Hourly Forecast")
-
-hour_html = '<div class="hourly-box">'
-for i in range(12):
-    hour = df.iloc[i]
-    hour_html += f"""
-    <div class="hour-card">
-        <div>{hour['time'].strftime('%H:%M')}</div>
-        <div>🌡️ {hour['temp']}°</div>
-        <div>🌧️ {hour['rain']}</div>
+with col1:
+    st.markdown(f"""
+    <div class="card">
+        <h2>📍 {city}</h2>
+        <h1>{current['temperature']}°C</h1>
+        <p>🤖 Predicted: {round(pred[0],2)}°C</p>
     </div>
-    """
-hour_html += "</div>"
+    """, unsafe_allow_html=True)
 
-st.markdown(hour_html, unsafe_allow_html=True)
+with col2:
+    st.markdown(f"""
+    <div class="card">
+        💧 Humidity: {df['humidity'].iloc[-1]}% <br>
+        💨 Wind: {current['windspeed']} km/h
+    </div>
+    """, unsafe_allow_html=True)
+
+# ---------------- HOURLY (FIXED — NO HTML BUG) ----------------
+st.subheader("⏰ Hourly Forecast")
+
+hour_cols = st.columns(6)
+
+for i in range(6):
+    with hour_cols[i]:
+        st.markdown(f"""
+        <div class="card" style="text-align:center">
+            <b>{df['time'][i].strftime('%H:%M')}</b><br>
+            🌡️ {df['temp'][i]}°<br>
+            🌧️ {df['rain'][i]}
+        </div>
+        """, unsafe_allow_html=True)
 
 # ---------------- GRAPH ----------------
-st.markdown("### 📈 Temperature Trend")
+st.subheader("📈 Temperature Trend")
 st.line_chart(df.set_index("time")['temp'])
 
 # ---------------- 7 DAY ----------------
-st.markdown("### 📅 7-Day Forecast")
+st.subheader("📅 7-Day Forecast")
 
 daily = data['daily']
-
 cols = st.columns(7)
+
 for i in range(7):
     with cols[i]:
         st.markdown(f"""
         <div class="card" style="text-align:center">
-            <b>{pd.to_datetime(daily['time'][i]).strftime('%a')}</b>
-            <h3>{daily['temperature_2m_max'][i]}°</h3>
+            {pd.to_datetime(daily['time'][i]).strftime('%a')}<br>
+            <b>{daily['temperature_2m_max'][i]}°</b><br>
             <small>{daily['temperature_2m_min'][i]}°</small>
         </div>
         """, unsafe_allow_html=True)
 
-# ---------------- MAP ----------------
-st.markdown("### 📍 Map")
+# ---------------- MAP (STABLE) ----------------
+st.subheader("📍 Map")
 
-m = folium.Map(location=[lat, lon], zoom_start=12, tiles="CartoDB positron")
-
-folium.Marker(
-    [lat, lon],
-    tooltip=city,
-    popup=f"{city} {current['temperature']}°C"
-).add_to(m)
-
-st_folium(m, use_container_width=True, height=500)
+st.map(pd.DataFrame({'lat':[lat],'lon':[lon]}), zoom=12)
