@@ -34,6 +34,7 @@ body {background-color: #0e1117; color: white;}
 
 st.title("🌦️ Weather App")
 st.markdown("### 🌤️ Real-Time Weather + AI Prediction")
+st.caption("Live data • AI prediction • 7-day forecast")
 
 # 🔍 CITY SEARCH
 col_search, _ = st.columns([2,5])
@@ -87,9 +88,10 @@ col1, col2 = st.columns([3,1])
 with col1:
     st.markdown(f"""
     <div style="background:#1c1f26;padding:25px;border-radius:15px">
-        <h2>{city}</h2>
+        <h2>📍 {city}</h2>
         <h1 style="font-size:50px">{current['temperature']}°C</h1>
-        <p>Predicted: {round(prediction[0],2)}°C</p>
+        <p>🤖 Predicted: {round(prediction[0],2)}°C</p>
+        <p>🌡️ Feels like: {current['temperature'] + 2}°C</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -127,8 +129,8 @@ for i in range(7):
     with cols[i]:
         st.markdown(f"""
         <div style="background:#1c1f26;padding:15px;border-radius:10px;text-align:center">
-            <h4>{forecast_df['date'][i]}</h4>
-            <h2>{forecast_df['max'][i]}°</h2>
+            <h4>{pd.to_datetime(forecast_df['date'][i]).strftime('%a')}</h4>
+            <h2>☀️ {forecast_df['max'][i]}°</h2>
             <p>{forecast_df['min'][i]}°</p>
         </div>
         """, unsafe_allow_html=True)
