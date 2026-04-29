@@ -1,7 +1,6 @@
 streamlit
 pandas
-scikit-learn
 requests
-pydeck
+scikit-learn
 folium
 streamlit-folium
