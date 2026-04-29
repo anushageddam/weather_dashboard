@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
+import pydeck as pdk
 
 st.set_page_config(page_title="Weather App", layout="wide")
 st.markdown("""
@@ -137,11 +138,25 @@ for i in range(7):
 
 # 🗺️ MAP
 
-st.subheader(f"📍 Location: {city}")
+import pydeck as pdk
 
-map_data = pd.DataFrame({
-    'lat': [lat],
-    'lon': [lon]
-})
+st.subheader(f"📍 Map View: {city}")
 
-st.map(map_data, zoom=10)
+st.pydeck_chart(pdk.Deck(
+    map_style='mapbox://styles/mapbox/streets-v11',
+    initial_view_state=pdk.ViewState(
+        latitude=lat,
+        longitude=lon,
+        zoom=11,
+        pitch=45,
+    ),
+    layers=[
+        pdk.Layer(
+            "ScatterplotLayer",
+            data=pd.DataFrame({'lat':[lat],'lon':[lon]}),
+            get_position='[lon, lat]',
+            get_color='[0, 255, 255, 200]',
+            get_radius=30000,
+        ),
+    ],
+))
