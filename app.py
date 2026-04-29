@@ -4,10 +4,9 @@ import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 import pydeck as pdk
 
-# PAGE CONFIG
+# ---------------- PAGE SETUP ----------------
 st.set_page_config(page_title="Weather App", layout="wide")
 
-# DARK UI
 st.markdown("""
 <style>
 [data-testid="stAppViewContainer"] {
@@ -28,17 +27,17 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# TITLE
+# ---------------- HEADER ----------------
 st.title("🌦️ Weather App")
 st.markdown("### 🌤️ Real-Time Weather + AI Prediction")
 st.caption("Live data • AI prediction • 7-day forecast")
 
-# 🔍 SEARCH BAR
+# ---------------- SEARCH ----------------
 col_search, _ = st.columns([2,5])
 with col_search:
     city = st.text_input("🔍 Search City", "Hyderabad")
 
-# 🌍 GET LOCATION
+# ---------------- GEO API ----------------
 geo_url = f"https://geocoding-api.open-meteo.com/v1/search?name={city}"
 geo_data = requests.get(geo_url).json()
 
@@ -49,12 +48,13 @@ if "results" not in geo_data:
 lat = geo_data['results'][0]['latitude']
 lon = geo_data['results'][0]['longitude']
 
-# 🌦️ WEATHER DATA
+# ---------------- WEATHER API ----------------
 url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&hourly=temperature_2m,relativehumidity_2m,precipitation&daily=temperature_2m_max,temperature_2m_min&current_weather=true"
 data = requests.get(url).json()
 
-# 📊 DATAFRAME
+# ---------------- DATA ----------------
 hourly = data['hourly']
+
 df = pd.DataFrame({
     'time': hourly['time'],
     'temperature': hourly['temperature_2m'],
@@ -65,29 +65,31 @@ df = pd.DataFrame({
 df['time'] = pd.to_datetime(df['time'])
 df['hour'] = df['time'].dt.hour
 
-# 🤖 MODEL
+# ---------------- ML MODEL ----------------
 X = df[['hour', 'humidity']]
 y = df['temperature']
 
 model = RandomForestRegressor()
 model.fit(X, y)
 
-# 🔮 PREDICTION
+# ---------------- PREDICTION ----------------
 current = data['current_weather']
 current_hour = pd.to_datetime(current['time']).hour
 current_humidity = df['humidity'].iloc[-1]
 
 prediction = model.predict([[current_hour, current_humidity]])
+accuracy = model.score(X, y)
 
-# 🌡️ MAIN UI
+# ---------------- MAIN CARDS ----------------
 col1, col2 = st.columns([3,1])
 
 with col1:
     st.markdown(f"""
     <div class="card">
         <h2>📍 {city}</h2>
-        <h1 style="font-size:50px">{current['temperature']}°C</h1>
+        <h1 style="font-size:50px">☀️ {current['temperature']}°C</h1>
         <p>🤖 Predicted: {round(prediction[0],2)}°C</p>
+        <p>📊 Model Confidence: {round(accuracy*100,2)}%</p>
         <p>🌡️ Feels like: {current['temperature'] + 2}°C</p>
     </div>
     """, unsafe_allow_html=True)
@@ -101,16 +103,16 @@ with col2:
     </div>
     """, unsafe_allow_html=True)
 
-# 📈 TEMPERATURE GRAPH
-st.subheader("📈 Temperature Trend")
-st.line_chart(df[['temperature']])
+# ---------------- GRAPH ----------------
+st.markdown("## 📈 Temperature Trend")
+st.line_chart(df.set_index('time')['temperature'])
 
-# 🌧️ RAIN
-st.subheader("🌧️ Rain Prediction (Next 24 Hours)")
-st.bar_chart(df[['rain']].head(24))
+# ---------------- RAIN ----------------
+st.markdown("## 🌧️ Rain Prediction (Next 24 Hours)")
+st.bar_chart(df.set_index('time')['rain'].head(24))
 
-# 📅 7 DAY FORECAST
-st.subheader("📅 7-Day Forecast")
+# ---------------- 7 DAY FORECAST ----------------
+st.markdown("## 📅 7-Day Forecast")
 
 daily = data['daily']
 
@@ -132,17 +134,13 @@ for i in range(7):
         </div>
         """, unsafe_allow_html=True)
 
-# 🗺️ MAP (FIXED & WORKING)
+# ---------------- MAP ----------------
+st.markdown(f"## 📍 Map View: {city}")
 
-st.subheader(f"📍 Map View: {city}")
-
-map_df = pd.DataFrame({
-    'lat': [lat],
-    'lon': [lon]
-})
+map_df = pd.DataFrame({'lat':[lat],'lon':[lon]})
 
 st.pydeck_chart(pdk.Deck(
-    map_style="mapbox://styles/mapbox/light-v9",
+    map_style="mapbox://styles/mapbox/streets-v11",
     initial_view_state=pdk.ViewState(
         latitude=lat,
         longitude=lon,
@@ -154,7 +152,7 @@ st.pydeck_chart(pdk.Deck(
             data=map_df,
             get_position='[lon, lat]',
             get_color='[255, 0, 0]',
-            get_radius=300,
+            get_radius=200,
         )
     ]
 ))
