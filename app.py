@@ -2,9 +2,22 @@ import streamlit as st
 import requests
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
-import pydeck as pdk
 
 st.set_page_config(page_title="Weather App", layout="wide")
+st.markdown("""
+<style>
+[data-testid="stAppViewContainer"] {
+    background-color: #0e1117;
+    color: white;
+}
+[data-testid="stHeader"] {
+    background: transparent;
+}
+[data-testid="stToolbar"] {
+    display: none;
+}
+</style>
+""", unsafe_allow_html=True)
 
 # 🎨 DARK STYLE
 st.markdown("""
@@ -20,10 +33,13 @@ body {background-color: #0e1117; color: white;}
 """, unsafe_allow_html=True)
 
 st.title("🌦️ Weather App")
+st.markdown("### 🌤️ Real-Time Weather + AI Prediction")
 
 # 🔍 CITY SEARCH
-city = st.text_input("Search City", "Hyderabad")
+col_search, _ = st.columns([2,5])
 
+with col_search:
+    city = st.text_input("🔍 Search City", "Hyderabad")
 # 🌍 GEO API
 geo_url = f"https://geocoding-api.open-meteo.com/v1/search?name={city}"
 geo_data = requests.get(geo_url).json()
@@ -66,24 +82,23 @@ current_humidity = df['humidity'].iloc[-1]
 prediction = model.predict([[current_hour, current_humidity]])
 
 # 🌡️ MAIN CARD
-col1, col2 = st.columns([2,1])
+col1, col2 = st.columns([3,1])
 
 with col1:
     st.markdown(f"""
-    <div class="card">
+    <div style="background:#1c1f26;padding:25px;border-radius:15px">
         <h2>{city}</h2>
-        <h1 class="big-font">{current['temperature']}°C</h1>
+        <h1 style="font-size:50px">{current['temperature']}°C</h1>
         <p>Predicted: {round(prediction[0],2)}°C</p>
-        <p>Wind: {current['windspeed']} km/h</p>
     </div>
     """, unsafe_allow_html=True)
 
 with col2:
     st.markdown(f"""
-    <div class="card">
+    <div style="background:#1c1f26;padding:25px;border-radius:15px">
         <h3>Details</h3>
-        <p>Humidity: {df['humidity'].iloc[-1]}%</p>
-        <p>Rain: {df['rain'].iloc[-1]} mm</p>
+        <p>💧 Humidity: {df['humidity'].iloc[-1]}%</p>
+        <p>💨 Wind: {current['windspeed']} km/h</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -108,37 +123,22 @@ forecast_df = pd.DataFrame({
 
 cols = st.columns(7)
 
-for i in range(len(forecast_df)):
+for i in range(7):
     with cols[i]:
         st.markdown(f"""
-        <div class="card">
-        <p>{forecast_df['date'][i]}</p>
-        <h3>{forecast_df['max'][i]}°</h3>
-        <p>{forecast_df['min'][i]}°</p>
+        <div style="background:#1c1f26;padding:15px;border-radius:10px;text-align:center">
+            <h4>{forecast_df['date'][i]}</h4>
+            <h2>{forecast_df['max'][i]}°</h2>
+            <p>{forecast_df['min'][i]}°</p>
         </div>
         """, unsafe_allow_html=True)
 
 # 🗺️ MAP
-st.subheader("📍 Location Map")
 
-map_df = pd.DataFrame({
+st.subheader("📍 Location")
+
+st.map(pd.DataFrame({
     'lat': [lat],
     'lon': [lon]
-})
-
-st.pydeck_chart(pdk.Deck(
-    initial_view_state=pdk.ViewState(
-        latitude=lat,
-        longitude=lon,
-        zoom=8
-    ),
-    layers=[
-        pdk.Layer(
-            'ScatterplotLayer',
-            data=map_df,
-            get_position='[lon, lat]',
-            get_color='[255, 0, 0, 160]',
-            get_radius=50000,
-        ),
-    ],
-))
+}))
+   
