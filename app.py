@@ -137,10 +137,11 @@ for i in range(7):
 
 # 🗺️ MAP
 
-st.subheader("📍 Location")
+st.subheader(f"📍 Location: {city}")
 
-st.map(pd.DataFrame({
+map_data = pd.DataFrame({
     'lat': [lat],
     'lon': [lon]
-}))
-   
+})
+
+st.map(map_data, zoom=10)
